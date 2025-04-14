@@ -1,0 +1,46 @@
+topics:
+
+
+Watering/FIRMWARE/URL					 //Default: "http://w3.hdsnet.hu/szabolcskiss/firmware/watering_controller.bin";
+Watering/FIRMWARE/VERSION                //CMakeLists.txt: set(PROJECT_VER "1.0.0.7")-nél magadott verzióval egyezni kell, hogy elinduljon az OTA.
+										 //Csak az eddigivel egyező projektet fogad el az OTA. ( CMakeLists.txt: project(watering_controller))
+Watering/FIRMWARE/RUNNING_VERSION		 //controller publishing at restart  
+
+
+
+Watering/SWITCHx/request	{ON:OFF}
+Watering/SWITCHx/status	{ON:OFF}
+Watering/SWITCHx/schedule/periodx {10:00-12:00 [+++++++] 30}
+Watering/SWITCHx/schedule/?    list all periods
+Watering/SWITCHx/scheduled {10:00-12:00 [+++++++] 30min}				//returns all scheduled periods
+Watering/SWITCHx/ontime  { 500 sec}
+
+Watering/pump_restart_delay { 10min} 
+Watering/LEVEL/?	
+
+Watering/measure_mode {ON:OFF}
+
+Watering/MEASURE/VOLTAGE
+Watering/MEASURE/CURRENT
+Watering/MEASURE/POWER
+Watering/MEASURE/ENERGY
+Watering/MEASURE/LEVEL		water level in cm
+
+
+
+Watering/STATISTIC/EEEE/HH/NN/ENERGY 2.3kWh
+Watering/STATISTIC/EEEE/HH/NN/ONTIME 120 min
+
+
+
+
+
+
+examples:
+Watering/FIRMWARE/URL:
+	-http://w3.hdsnet.hu/szabolcskiss/simple_ota.bin
+	-https://github.com/szabolcskiss70/remoteswitch/raw/main/release/simple_ota.bin
+	-http://otadrive.com/DeviceApi/GetEsp8266Update?k=760bc81b-1740-4866-be94-08bc820ca6bd&s=CHIPID&v=1.0.0.2
+	-http://szabolcskiss.nhely.hu/public/test/watering_controller.bin
+	
+	
