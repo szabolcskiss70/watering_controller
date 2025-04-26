@@ -96,7 +96,8 @@ int prev_daily_ontime[3]={0,0,0};
 int SNTP_synchronized=0;
 int FW_update_available=0;
 #define OTA_URL_SIZE 256 
-char url_buf[OTA_URL_SIZE]="https://github.com/szabolcskiss70/watering_controller/raw/main/release/watering_controller.bin";
+//char url_buf[OTA_URL_SIZE]="https://github.com/szabolcskiss70/watering_controller/raw/main/release/watering_controller.bin";
+char url_buf[OTA_URL_SIZE]="http://szabolcskiss.ddns.net/watering_controller.bin";
 void ota_update_task(void *pvParameter);
 void switch_channel(int ch, T_states status);
 void Save_data_to_NVS();
@@ -123,7 +124,7 @@ const int DS_PIN = 17; //GPIO where you connected ds18b20
 #define GPIO_OUTPUT_OUT_2    12
 #define GPIO_OUTPUT_OUT_3    2
 #define GPIO_OUTPUT_OUT_4    25
-//#define GPIO_OUTPUT_RELAY    3
+#define GPIO_OUTPUT_RELAY    21
 
 #define ISOLATED_INPUT_1    36
 #define ISOLATED_INPUT_2    39
@@ -132,7 +133,7 @@ const int DS_PIN = 17; //GPIO where you connected ds18b20
 
 
 
-#define GPIO_OUTPUT_PIN_SEL  (1ULL<<GPIO_OUTPUT_OUT_1 | 1ULL<<GPIO_OUTPUT_OUT_2 | 1ULL<<GPIO_OUTPUT_OUT_3 | 1ULL<<GPIO_OUTPUT_OUT_4 /*| 1ULL<<GPIO_OUTPUT_RELAY*/)
+#define GPIO_OUTPUT_PIN_SEL  (1ULL<<GPIO_OUTPUT_OUT_1 | 1ULL<<GPIO_OUTPUT_OUT_2 | 1ULL<<GPIO_OUTPUT_OUT_3 | 1ULL<<GPIO_OUTPUT_OUT_4 | 1ULL<<GPIO_OUTPUT_RELAY)
 #define GPIO_INPUT_PIN_SEL (1ULL<<ISOLATED_INPUT_1 | 1ULL<<ISOLATED_INPUT_2)
 
 
@@ -456,9 +457,9 @@ void Publish_ontime(int ch)
 void reboot_WIFI_STICK()
 {
 	ESP_LOGI(TAG, "reboot wifi stick");
-	gpio_set_level(GPIO_OUTPUT_OUT_4, 1);
+	gpio_set_level(GPIO_OUTPUT_RELAY, 1);
 	vTaskDelay(5*1000 / portTICK_PERIOD_MS);	
-	gpio_set_level(GPIO_OUTPUT_OUT_4, 0);
+	gpio_set_level(GPIO_OUTPUT_RELAY, 0);
 }
 
 
@@ -685,7 +686,12 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 			ESP_LOGI(TAG, "%s",ldata);
 
 			
-			if(strncmp(event->topic,"Watering/FIRMWARE/URL",strlen("Watering/FIRMWARE/URL"))==0) {ESP_LOGI(TAG, "FIRMWARE/URL");strncpy(url_buf,event->data,event->data_len);url_buf[event->data_len]=0;}	
+			if(strncmp(event->topic,"Watering/FIRMWARE/URL",strlen("Watering/FIRMWARE/URL"))==0) 
+			{
+			 ESP_LOGI(TAG, "FIRMWARE/URL");
+			 if (event->data_len)  strcpy(url_buf,ldata);
+			 if(mqtt_connected) esp_mqtt_client_publish(mqtt_client,  "Watering/FIRMWARE/URL/value", url_buf, 0, 0, 0);			 
+			}	
 			else if(strcmp(ltopic,"Watering/FIRMWARE/VERSION")==0) 
 			{
 				ESP_LOGI(TAG, "FIRMWARE/VERSION");
@@ -710,10 +716,9 @@ static esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
 				{
 				 for(i=0;i<sizeof(str_states);i++)
 				 {
-				  if(strcmp(ldata,str_states[i])==0) break;
-				  
+				  if(strcmp(ldata,str_states[i])==0) break;				  
 				 }
-				 if(i<=sizeof(str_states)) manual_change_request[ch]=i; 
+				 if(i<sizeof(str_states)) manual_change_request[ch]=i; 
 			     else manual_change_request[ch]=NOREQUEST;
 				 if(manual_change_request[ch]==ENABLED) {channel_disabled[ch]=0;Save_data_to_NVS();}
 				 else if (manual_change_request[ch]==DISABLED) {channel_disabled[ch]=1;Save_data_to_NVS();}
@@ -1049,7 +1054,7 @@ static void mqtt_app_start(void)
 }
 
 
-int GPIO_OUTPUT_OUT_Array[2][3]={{GPIO_OUTPUT_OUT_1,GPIO_OUTPUT_OUT_1,GPIO_OUTPUT_OUT_1},{GPIO_OUTPUT_OUT_2,GPIO_OUTPUT_OUT_3,0}};
+int GPIO_OUTPUT_OUT_Array[2][3]={{GPIO_OUTPUT_OUT_1,GPIO_OUTPUT_OUT_1,GPIO_OUTPUT_OUT_1},{GPIO_OUTPUT_OUT_2,GPIO_OUTPUT_OUT_3,GPIO_OUTPUT_OUT_4}};
 
 void switch_channel_relays(int channel, int status)
 {
@@ -2224,10 +2229,12 @@ void app_main()
 	
 //	delete_all_chedules();
 	Load_data_from_NVS();
+	
+	gpio_set_level(GPIO_OUTPUT_RELAY, 0);
 
   init_display();
   
-    gpio_set_level(GPIO_OUTPUT_OUT_4, 0);
+  
 
   
 	 gpio_config_t io_conf;
@@ -2277,6 +2284,7 @@ void app_main()
 
 
 	Write_Msg_toDisplay(0,"connect to WIFI...");
+		
 	initialise_wifi();
 	
 	
